@@ -10,6 +10,7 @@ title: CMIP7 Participation Guidance for Data Managers
     The contents of the pages are currently in development.
     They will updated when ESGF-NG (Next Generation ESGF) is available for CMIP7 data publication.
     [See here](https://wcrp-cmip.org/esgf-information/) for previous announcements about ESGF changes.
+    A brief overview of ESGF-NG is given in the slides from [CMIP 2026 workshop WIP session](https://zenodo.org/records/18934629) (slides 22-27).
 
 
 ## 1. Installation and configuration
@@ -31,11 +32,11 @@ Updated information on ESGF policies will be added here soon.
 <!-- For new or exisiting ESGF node installations, first read the [following document](www.esgf.com) on ESGF policies, as this will influence the type of installation you need to deploy.  -->
 <!-- _needs proper link and updating_  -->
 
-### 1.2 How to install data node services
+### 1.2 How to Install Data Node Services
 **Requirements, setup and usage documentation**
 
 **Software Stack**
-The ESGF software stack requires Linux RedHat Enterprise or Rocky/Alma distributions. Administrators must have full sudo privileges to root access or a Kubernetes Cluster.
+The ESGF software stack for a Data Node requires Linux RedHat Enterprise or Rocky/Alma distributions. Administrators must have full sudo privileges to root access or a Kubernetes Cluster.
 The services are meant to run on webserver-grade hardware.
 For data-sharing nodes the storage holding your data must be mounted on the node. 
 <!-- _need a practical example here with cost estimate_.  -->
@@ -43,7 +44,7 @@ For data-sharing nodes the storage holding your data must be mounted on the node
 
 **ESGF Docker** 
 Instructions and links to any issuses can be [found here](https://github.com/ESGF/esgf-docker/).
-
+It is at this point where the node adminstrator will configure data mounts within the container and these mounts become available via a "logical prefix" in the published url.  Refer to these when configuring the publisher `data_roots` section. (see below)
 
 **Metagrid user interface - optional**
 To install the Metagrid UI for end-users to search and download data, read the documentation [here](https://metagrid.readthedocs.io/en/latest/) and see the Github repo [here](https://github.com/esgf2-us/metagrid). 
@@ -52,56 +53,53 @@ To install the Metagrid UI for end-users to search and download data, read the d
 
 _Coming soon...._
 
-## 2. Dataset publication - Preliminary testing for CMIP7
 
-_the command-line tools described in this section are not production-ready for CMIP7 publication, however we welcome test users who have successfully produced CMORized data to test out the tools/workflows. Follow the steps below specific to testing_
+## 2. Dataset publication 
 
- - Apply for Integration testing group membership here:  (https://app.globus.org/groups/e3329078-b8f6-11f0-9fdd-0e7d9e9fc9e3)
-   - You may use your insitution or well-known Social Auth provider to log in to Globus
- - Install Python packages for publication workflow:
-   ```
-   pip install 'git+https://github.com/sashakames/esg-publisher.git@stac-update' esgvoc esgprep
-   ```
- - Follow instructions linked from the *esgf-prepare* docs site on CMIP7 vocabulary installation with `esgvoc`
-   - https://esgf.github.io/esgf-prepare/
- - Add the following to your esg.yaml config file for publishing:
-```
-stac_config:
-  stac_client:
-    client_id:  ec5f07c0-7ed8-4f2b-94f2-ddb6f8fc91a3
-    redirect_uri:  https://auth.globus.org/v2/web/auth-code
-  token_storage_file: ~/.esgf2-publisher.json 
-  stac_transaction_api:
-    client_id: 6fa3b827-5484-42b9-84db-f00c7a183a6a
-    access_control_policy: https://esgf2.s3.amazonaws.com/access_control_policy.json
-    scope_string: https://auth.globus.org/scopes/6fa3b827-5484-42b9-84db-f00c7a183a6a/ingest    
-    base_url: https://client-integration-transaction.api.stac.esgf-west.org
-  stac_api: https://integration-testing.api.stac.esgf-west.org
-```
- - When you run `esgpublish`, and provided that your data scans for extraction without error, you will be prompted to fetch a token by *copy/pasting* a link to your browser.  Follow instructions with the authorization code.  This process will establish your access token to publish.
 
 ### 2.1 Requirements
 
 Publishers to ESGF **must** have an existing Data Node installed at their site. Although the publisher software (from v5.x onwards) does not need to run on the Data Node it does require a _Data mount_ for the software to access data files. 
 
-### 2.2 Dataset preparation 
+### 2.2 Introduction to ESGF-NG and Authorization for Publishing
+
+Please read the following [ESGF-NG Onboarding](https://github.com/ESGF/esgf-ng-onboarding/tree/main) pages hosted at GitHub.  These introduce the STAC Transaction API endpoint options and the two ESGF authentication domains: Globus and EGI Auth.  Each domain/system has separare policies for account and authorization management.  You cannot publish until you have established an authorized account to publish.
+
+### 2.3 Dataset preparation 
 The ESGF publication process requires robust and effective data management, which can also be a burden for data managers. However, the [ESGF esgprep toolbox](https://esgf.github.io/esgf-prepare/) is a piece of software that enables data preparation according to ESGF best practices. Esgprep allows the data providers and data node managers to easily prepare their data for publishing to an ESGF node - it is a standalone toolbox. It can be used to fetch required configuration files, apply the Data Reference Syntax on local filesystems and/or generate mapfiles for ESGF publication.
 
-Full details of _esgprep_ and instructions for use provided by the team at Institut Pierre-Simon Laplace (IPSL) can be [found here](https://esgf.github.io/esgf-prepare/).  
+Full details of _esgprep_ and instructions for use provided by the team at Institut Pierre-Simon Laplace (IPSL) can be [found here](https://esgf.github.io/esgf-prepare/).  Note that the package requires an `esgvoc` installation
+- `esgvoc use cmip7@latest` will fetch your CVs needed for esgprep and `compliance-checker` with the WCRP plugin.
 
-### 2.3 Publisher introduction 
+
+### 2.4 Publisher introduction 
 The esg-publisher or _esgcet_ Python package contains a collection of command-line utilities to scan, manipulate and push dataset metadata to an ESGF index node. 
 The basic publication process takes several steps with some optional steps. Publisher functionality is available via several submodles/classes in the package.
 Please refer to the [user documentation](https://esg-publisher.readthedocs.io/en/stable/intro.html) and [Github issues page](https://github.com/ESGF/esg-publisher/issues)
 
-### 2.4 ESG-Publisher software installation 
+The publisher installation includes the IOOS checker and WCRP plugins. 
+
+### 2.5 ESG-Publisher software installation 
 **Requirements** 
 
 1. A python environment, using venv, conda, miniforge/mamba etc. 
 2. Mountpoint map to data on the same host as the publisher software installation, so the publisher has access to scan data using the integrated XArray package.
 3. Basic dataset information provided via the esg mapfile format. For example using the esgf-prepare/esgmapfile utility.
+4.  `pip install esgcet` will install the most recent version of the package.
+5.  You will need to provide appropriate settings for your _Data Node_ in your `esg.yaml` or similarly named esg-publisher configuration file.  `data_node` contains the hostname where your data is available and configured in `esgf-docker`.   Similarly, `data_roots` must be configured for the mounted file system and logically accessible prefix on your data node NGINX webserver.  Example:
+```
+data_roots:
+   esg_dataroot: /path/to/esgf/data
+```
+The `/path/to/esgf/data` must be visible by the local `esgcet` installation environment.
 
-### 2.5 Dataset publication
+### 2.6. Authorizarion to Publish  
+
+- In order to publish, `esgpublish` will need to establish your publishing credential when run for the first time.
+- Alternatively run `esglogin [--config </path/to/your/esg.yaml>]` as that can be run without invoking `esgpublish`
+- You will be prompted to fetch a token by *copy/pasting* a link to your browser.  Follow instructions with the authorization code.  This process will establish your access token to publish.
+
+### 2.7 Dataset publication
 Full details of the dataset publication process using _pip install_ to install _esgcet_ can be found [here](https://esg-publisher.readthedocs.io/en/stable/install.html)
 
 In the examples below, the configuration file is installed in a default location of `$HOME/.esg.yaml`.  the `<DRS-dataset-id>` follows the CMIP7 DRS structure and uses dot `.` delimters between each controlled-vocabulary property ending with the *Directory Date* as in the form `v20YYMMDD`.
@@ -114,12 +112,45 @@ Where a `.map` file has been generated by the `esgmapfile` command from the `esg
 
 *Please note* that publication will automatically run the per-file QAQC process as stipulated in the CMIP7 toml, and this process is a requirement for publication to the CMIP7 collection in the ESGF catalog.  Data that fails a QC check yet was published by means of tampering with the publisher will be subject to removal from the catalog at a later date.
 
+ - When you run `esgpublish`, and provided that your data scans for extraction without error, and you skip the _esglogin_ step, you will be prompted to fetch a token by *copy/pasting* a link to your browser.  Follow instructions with the authorization code.  This process will establish your access token to publish.
+
 ## 3. Dataset retraction
 
 ### 3.1 Retraction process
-The _esgunpublish_ command retracts, or, upon specification, deletes a specified dataset(s). The output of this command is either a success or failure message accompanied with the id of the dataset that was retracted. **Exercise caution** when deleting datasets. If replicas have been made or if you will be republishing, **you should retract** rather than delete outright. Follow the instructions [here](https://esg-publisher.readthedocs.io/en/stable/esgunpublish.html) and for an example, check out the [Jupyter notebook](https://nbviewer.org/github/ESGF/esg-publisher/blob/main/notebooks/unpublish-list.ipynb)
+Datasets that are found to be scientifically or technically incorrect must be retracted and the reasons for retraction explained using the [Errata service](https://errata.esgf.io/).
+
+Use the `esgunpublish` command to retract datasets.
+Follow the [instructions here](https://esg-publisher.readthedocs.io/en/stable/esgunpublish.html), and for an example check out the [Jupyter notebook](https://nbviewer.org/github/ESGF/esg-publisher/blob/main/notebooks/unpublish-list.ipynb).
+If you need to _outright delete_ a dataset, please reach out to ESGF index administrators.
+Note that retracting is necessary to register the status of retracted data with the ESGF network so that users searching the index will see the retracted status and any nodes that have replicated the data can take appropriate action.
 
 **Example command:**
 ```
 esgunpublish --dset-id <DRS-dataset-id>
 ```
+
+### 3.2 Hosting of retracted data
+We strongly recommend that once data has been retracted that the affected files are removed from public storage and are not available for 
+download by any means.  Reasons for retraction are likely to include scientific or technical faults in the data and there is a significant 
+risk of this data being retrieved and used without the user being aware of corresponding errata. We recommend that modelling groups retain 
+copies of the retracted data where possible in case of subsequent queries.
+
+## 4. Versioning and Errata
+
+### 4.1 Versioning datasets
+
+Anytime there is any change to a published dataset, an new dataset version must be created. 
+The version identifier is the last component of a CMIP7 dataset's directory path.
+Sites **must ensure** that an updated dataset is never erroneously published using the same version identifier as its previous version.
+
+CMOR by default will write the version identifier in the output directory path as the current date (example: `v20260511`).
+However the version can also be user-specified as an input to CMOR.
+Sites that use CMOR should ensure that version identifiers are correctly specified for updated datasets (i.e., that a previous user-specified version is not mistakenly applied to updated version of a dataset).
+
+Alternatively, and in cases where CMOR is not used, the [ESGDRS Tool](https://esgf.github.io/esgf-prepare/drs.html) can be used to set the version identifier.
+
+Once a new version is added follow the same publication procedures to publish the updated data.  The new dataset will supersede the prior version in ESGF data discovery.
+
+### 4.2 Errata Service
+
+When a site creates an updated version of a dataset, or retracts a dataset, an Errata must be opened using the [Errata service](https://errata.esgf.io/).  Please see the [Errata documentation](https://ipsl.gitbook.io/esgf-errata-service) on the procedures.  Users can also create Errata, and it is the responsibility of the data managers or modelers to review user-created Errata issues to confirm or challenge the input.
